@@ -1,0 +1,996 @@
+import { useState, useEffect, useRef } from "react";
+
+const style = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --cream: #FAF6EF;
+    --warm-white: #FDF9F3;
+    --golden: #C8973A;
+    --golden-light: #E8B96A;
+    --brown-deep: #3B2314;
+    --brown-mid: #6B3F22;
+    --brown-soft: #A0684A;
+    --terracotta: #C4622D;
+    --sage: #7A8C6E;
+    --text-main: #2C1A0E;
+    --text-soft: #7A5C45;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-main);
+    overflow-x: hidden;
+  }
+
+  .grain {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 999; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(250,246,239,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(200,151,58,0.15);
+    transition: all 0.3s ease;
+  }
+
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brown-deep);
+    letter-spacing: -0.02em;
+  }
+
+  .nav-logo span { color: var(--golden); font-style: italic; }
+
+  .nav-links {
+    display: flex; gap: 40px; list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--golden); }
+
+  .nav-cta {
+    background: var(--brown-deep);
+    color: var(--cream) !important;
+    padding: 10px 24px;
+    border-radius: 2px;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.1em !important;
+    transition: background 0.2s !important;
+  }
+
+  .nav-cta:hover { background: var(--golden) !important; color: var(--brown-deep) !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    position: relative;
+    padding: 120px 60px 80px;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(200,151,58,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(196,98,45,0.08) 0%, transparent 50%),
+                var(--cream);
+  }
+
+  .hero-circle {
+    position: absolute;
+    right: -100px; top: 50%;
+    transform: translateY(-50%);
+    width: 680px; height: 680px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,151,58,0.18) 0%, rgba(200,151,58,0.05) 50%, transparent 70%);
+    border: 1px solid rgba(200,151,58,0.2);
+  }
+
+  .hero-circle-2 {
+    position: absolute;
+    right: 80px; top: 50%;
+    transform: translateY(-50%);
+    width: 480px; height: 480px;
+    border-radius: 50%;
+    border: 1px solid rgba(200,151,58,0.12);
+  }
+
+  .hero-content { position: relative; z-index: 2; max-width: 620px; }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--golden);
+    margin-bottom: 24px;
+    padding: 6px 16px;
+    border: 1px solid rgba(200,151,58,0.3);
+    border-radius: 20px;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3.5rem, 6vw, 6rem);
+    line-height: 1.05;
+    color: var(--brown-deep);
+    margin-bottom: 28px;
+    letter-spacing: -0.03em;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--golden);
+  }
+
+  .hero-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 300;
+    color: var(--text-soft);
+    line-height: 1.7;
+    margin-bottom: 48px;
+    max-width: 480px;
+  }
+
+  .hero-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    background: var(--brown-deep);
+    color: var(--cream);
+    padding: 16px 36px;
+    border: none; border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .btn-primary:hover { background: var(--golden); color: var(--brown-deep); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--brown-deep);
+    padding: 16px 36px;
+    border: 1.5px solid var(--brown-deep);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .btn-secondary:hover { background: var(--brown-deep); color: var(--cream); }
+
+  .hero-stats {
+    position: absolute;
+    right: 60px; bottom: 80px;
+    display: flex; gap: 48px;
+    z-index: 2;
+  }
+
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--brown-deep);
+    display: block;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-soft);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* SECTION SHARED */
+  section { padding: 100px 60px; }
+
+  .section-tag {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--golden);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    color: var(--brown-deep);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+
+  .section-title em { font-style: italic; color: var(--golden); }
+
+  .section-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: var(--text-soft);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  /* ABOUT */
+  .about {
+    background: var(--warm-white);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .about-visual {
+    position: relative;
+    height: 520px;
+  }
+
+  .about-card {
+    position: absolute;
+    background: var(--cream);
+    border: 1px solid rgba(200,151,58,0.2);
+    border-radius: 4px;
+    padding: 32px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+
+  .about-card-main {
+    inset: 0;
+    background: linear-gradient(160deg, rgba(200,151,58,0.08) 0%, rgba(107,63,34,0.06) 100%),
+                var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8rem;
+  }
+
+  .about-card-badge {
+    position: absolute;
+    bottom: -20px; right: -20px;
+    width: 120px; height: 120px;
+    background: var(--golden);
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--cream);
+  }
+
+  .badge-year {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .badge-text {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 40px;
+  }
+
+  .value-item {
+    padding: 20px;
+    border: 1px solid rgba(200,151,58,0.15);
+    border-radius: 4px;
+    background: var(--cream);
+  }
+
+  .value-icon { font-size: 1.5rem; margin-bottom: 10px; display: block; }
+
+  .value-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--brown-deep);
+    margin-bottom: 6px;
+  }
+
+  .value-desc {
+    font-size: 0.82rem;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+
+  /* MENU */
+  .menu { background: var(--cream); }
+
+  .menu-header {
+    display: flex; align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 60px;
+    flex-wrap: wrap; gap: 24px;
+  }
+
+  .menu-filters {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(200,151,58,0.25);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--brown-deep);
+    color: var(--cream);
+    border-color: var(--brown-deep);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 28px;
+  }
+
+  .menu-card {
+    background: var(--warm-white);
+    border: 1px solid rgba(200,151,58,0.12);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(59,35,20,0.1);
+  }
+
+  .menu-card-img {
+    height: 200px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4.5rem;
+    background: linear-gradient(135deg, rgba(200,151,58,0.08), rgba(107,63,34,0.05));
+  }
+
+  .menu-card-body { padding: 24px; }
+
+  .menu-card-tag {
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--golden);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .menu-card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--brown-deep);
+    margin-bottom: 8px;
+  }
+
+  .menu-card-desc {
+    font-size: 0.82rem;
+    color: var(--text-soft);
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+
+  .menu-card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(200,151,58,0.15);
+    padding-top: 16px;
+  }
+
+  .menu-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--golden);
+  }
+
+  .menu-order-btn {
+    background: var(--brown-deep);
+    color: var(--cream);
+    border: none;
+    padding: 8px 18px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .menu-order-btn:hover { background: var(--golden); color: var(--brown-deep); }
+
+  /* RESERVATION */
+  .reservation {
+    background: var(--brown-deep);
+    color: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reservation::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,151,58,0.15), transparent 70%);
+  }
+
+  .reservation-inner {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1fr 1.2fr;
+    gap: 80px; align-items: start;
+  }
+
+  .reservation .section-title { color: var(--cream); }
+  .reservation .section-title em { color: var(--golden-light); }
+  .reservation .section-sub { color: rgba(250,246,239,0.65); }
+
+  .res-info-cards { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+
+  .res-info-card {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(200,151,58,0.2);
+    border-radius: 4px;
+  }
+
+  .res-icon { font-size: 1.4rem; }
+  .res-info-label { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--golden-light); margin-bottom: 2px; }
+  .res-info-val { font-size: 0.92rem; color: var(--cream); }
+
+  /* FORM */
+  .booking-form {
+    background: var(--warm-white);
+    border-radius: 4px;
+    padding: 44px;
+    color: var(--text-main);
+  }
+
+  .form-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--brown-deep);
+    margin-bottom: 28px;
+  }
+
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 16px;
+  }
+
+  .form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .form-input, .form-select {
+    padding: 12px 16px;
+    border: 1.5px solid rgba(200,151,58,0.2);
+    border-radius: 2px;
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    transition: border-color 0.2s;
+    width: 100%;
+    appearance: none;
+  }
+
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--golden);
+  }
+
+  .slots-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 24px;
+  }
+
+  .slot-btn {
+    padding: 10px 8px;
+    border: 1.5px solid rgba(200,151,58,0.2);
+    border-radius: 2px;
+    background: var(--cream);
+    font-size: 0.82rem;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .slot-btn:hover { border-color: var(--golden); color: var(--golden); }
+  .slot-btn.selected { background: var(--golden); color: var(--brown-deep); border-color: var(--golden); font-weight: 600; }
+  .slot-btn.taken { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+  .form-submit {
+    width: 100%;
+    background: var(--brown-deep);
+    color: var(--cream);
+    padding: 16px;
+    border: none; border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 4px;
+  }
+
+  .form-submit:hover { background: var(--golden); color: var(--brown-deep); }
+
+  .success-msg {
+    background: rgba(122,140,110,0.12);
+    border: 1px solid var(--sage);
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .success-msg .check { font-size: 2rem; display: block; margin-bottom: 10px; }
+  .success-msg p { color: var(--text-main); font-size: 0.9rem; line-height: 1.6; }
+  .success-msg strong { color: var(--sage); }
+
+  /* TÉMOIGNAGES */
+  .testimonials { background: var(--warm-white); }
+
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 60px;
+  }
+
+  .testimonial-card {
+    background: var(--cream);
+    border: 1px solid rgba(200,151,58,0.12);
+    border-radius: 4px;
+    padding: 32px;
+    position: relative;
+  }
+
+  .testimonial-card::before {
+    content: '"';
+    position: absolute;
+    top: 20px; right: 28px;
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    color: rgba(200,151,58,0.12);
+    line-height: 1;
+  }
+
+  .stars { color: var(--golden); font-size: 0.9rem; margin-bottom: 16px; letter-spacing: 2px; }
+
+  .testimonial-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: var(--text-main);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .testimonial-author {
+    display: flex; align-items: center; gap: 14px;
+    border-top: 1px solid rgba(200,151,58,0.12);
+    padding-top: 20px;
+  }
+
+  .author-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--golden), var(--terracotta));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    color: var(--cream);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .author-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--brown-deep);
+  }
+  .author-since { font-size: 0.75rem; color: var(--text-soft); margin-top: 2px; }
+
+  /* FOOTER */
+  footer {
+    background: var(--brown-deep);
+    color: var(--cream);
+    padding: 70px 60px 40px;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 60px;
+    margin-bottom: 60px;
+    padding-bottom: 60px;
+    border-bottom: 1px solid rgba(250,246,239,0.1);
+  }
+
+  .footer-brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .footer-brand-name span { color: var(--golden-light); font-style: italic; }
+
+  .footer-brand-desc {
+    font-size: 0.85rem;
+    color: rgba(250,246,239,0.55);
+    line-height: 1.65;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-weight: 300;
+  }
+
+  .footer-col-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--golden-light);
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-links a {
+    color: rgba(250,246,239,0.55);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .footer-links a:hover { color: var(--golden-light); }
+
+  .footer-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+
+  .footer-copy { font-size: 0.78rem; color: rgba(250,246,239,0.35); }
+  .footer-heart { color: var(--golden-light); }
+
+  /* MOBILE */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    section { padding: 70px 24px; }
+    .hero { padding: 100px 24px 60px; }
+    .hero-stats { display: none; }
+    .hero-circle, .hero-circle-2 { display: none; }
+    .about { grid-template-columns: 1fr; }
+    .about-visual { height: 300px; }
+    .reservation-inner { grid-template-columns: 1fr; }
+    .testimonials-grid { grid-template-columns: 1fr; }
+    .footer-top { grid-template-columns: 1fr; gap: 36px; }
+    .form-row { grid-template-columns: 1fr; }
+    .slots-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+`;
+
+const MENU_ITEMS = [
+  { id: 1, cat: "Pains", tag: "Pain artisanal", name: "Pain de Campagne", desc: "Mie alvéolée, croûte dorée. Fermentation lente 18h.", price: "3,90 €", emoji: "🍞" },
+  { id: 2, cat: "Pains", tag: "Spécialité", name: "Baguette Tradition", desc: "Farine de blé Label Rouge, façonné à la main chaque matin.", price: "1,40 €", emoji: "🥖" },
+  { id: 3, cat: "Viennoiseries", tag: "Viennoiserie", name: "Croissant Pur Beurre", desc: "Beurre AOP Charentes-Poitou, feuilletage en 27 couches.", price: "1,60 €", emoji: "🥐" },
+  { id: 4, cat: "Viennoiseries", tag: "Viennoiserie", name: "Pain au Chocolat", desc: "Deux barres de chocolat Valrhona, pâte beurrée dorée.", price: "1,80 €", emoji: "🍫" },
+  { id: 5, cat: "Pâtisseries", tag: "Pâtisserie", name: "Tarte Citron Meringuée", desc: "Crème citron acidulée, meringue italienne légère.", price: "4,50 €", emoji: "🍋" },
+  { id: 6, cat: "Pâtisseries", tag: "Pâtisserie", name: "Éclair Café", desc: "Choux craquelin, crème pâtissière café Éthiopie.", price: "4,20 €", emoji: "☕" },
+  { id: 7, cat: "Sandwichs", tag: "Sandwich", name: "Jambon Beurre", desc: "Jambon blanc superieur, beurre demi-sel, baguette tradition.", price: "4,80 €", emoji: "🥪" },
+  { id: 8, cat: "Sandwichs", tag: "Sandwich", name: "Chèvre & Miel", desc: "Chèvre frais, miel de lavande, noix, pain de campagne.", price: "5,20 €", emoji: "🧀" },
+];
+
+const SLOTS_MATIN = ["7h00","7h30","8h00","8h30","9h00","9h30","10h00","10h30"];
+const SLOTS_MIDI = ["11h00","11h30","12h00","12h30","13h00","13h30"];
+const TAKEN = ["8h00","9h30","12h00","12h30"];
+
+const TESTIMONIALS = [
+  { stars: 5, text: "La baguette tradition est tout simplement incomparable. Je fais un détour exprès chaque matin — une habitude que je ne changerais pour rien au monde.", name: "Marie-Claire D.", since: "Cliente depuis 2021", init: "M" },
+  { stars: 5, text: "Les croissants pur beurre sont feuilletés comme nulle part ailleurs dans la ville. La réservation en ligne est super pratique pour les commandes du week-end.", name: "Thomas B.", since: "Client depuis 2022", init: "T" },
+  { stars: 5, text: "Une boulangerie qui respire l'authenticité. On sent que le boulanger aime vraiment son métier. Le pain de campagne se conserve trois jours sans problème.", name: "Isabelle R.", since: "Cliente depuis 2020", init: "I" },
+];
+
+export default function FierEtCroustillant() {
+  const [activeFilter, setActiveFilter] = useState("Tous");
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [formData, setFormData] = useState({ nom: "", email: "", tel: "", date: "", service: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const [activeSection, setActiveSection] = useState("accueil");
+
+  const cats = ["Tous", "Pains", "Viennoiseries", "Pâtisseries", "Sandwichs"];
+  const filtered = activeFilter === "Tous" ? MENU_ITEMS : MENU_ITEMS.filter(i => i.cat === activeFilter);
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSubmit = () => {
+    if (!formData.nom || !formData.email || !formData.date || !selectedSlot) return;
+    setSubmitted(true);
+  };
+
+  return (
+    <>
+      <style>{style}</style>
+      <div className="grain" />
+
+      {/* NAV */}
+      <nav>
+        <div className="nav-logo">Fier & <span>Croustillant</span></div>
+        <ul className="nav-links">
+          <li><a href="#accueil" onClick={e => { e.preventDefault(); scrollTo("accueil"); }}>Accueil</a></li>
+          <li><a href="#apropos" onClick={e => { e.preventDefault(); scrollTo("apropos"); }}>Notre histoire</a></li>
+          <li><a href="#menu" onClick={e => { e.preventDefault(); scrollTo("menu"); }}>Carte</a></li>
+          <li><a href="#reservation" onClick={e => { e.preventDefault(); scrollTo("reservation"); }}>Réservation</a></li>
+          <li><a href="#reservation" className="nav-cta" onClick={e => { e.preventDefault(); scrollTo("reservation"); }}>Commander</a></li>
+        </ul>
+      </nav>
+
+      {/* HERO */}
+      <section id="accueil" className="hero">
+        <div className="hero-bg" />
+        <div className="hero-circle" />
+        <div className="hero-circle-2" />
+        <div className="hero-content">
+          <span className="hero-tag">🌾 Boulangerie Artisanale</span>
+          <h1>Le pain qui<br /><em>fait sourire</em><br />le matin</h1>
+          <p className="hero-desc">Farines locales, fermentation lente, cuisson au four à sole — chez Fier & Croustillant, chaque fournée est une promesse tenue depuis l'aube.</p>
+          <div className="hero-actions">
+            <button className="btn-primary" onClick={() => scrollTo("reservation")}>Réserver une commande</button>
+            <button className="btn-secondary" onClick={() => scrollTo("menu")}>Voir la carte</button>
+          </div>
+        </div>
+        <div className="hero-stats">
+          <div className="stat"><span className="stat-num">04h</span><span className="stat-label">Premier four</span></div>
+          <div className="stat"><span className="stat-num">18h</span><span className="stat-label">Fermentation</span></div>
+          <div className="stat"><span className="stat-num">100%</span><span className="stat-label">Artisanal</span></div>
+        </div>
+      </section>
+
+      {/* ABOUT */}
+      <section id="apropos" className="about">
+        <div className="about-visual">
+          <div className="about-card about-card-main">🥖</div>
+          <div className="about-card-badge">
+            <span className="badge-year">2015</span>
+            <span className="badge-text">depuis</span>
+          </div>
+        </div>
+        <div>
+          <span className="section-tag">Notre histoire</span>
+          <h2 className="section-title">L'art du pain<br /><em>sans compromis</em></h2>
+          <p className="section-sub">Fondée en 2015, Fier & Croustillant est née d'une conviction simple : un bon pain mérite du temps, du soin et de l'honnêteté. Nous travaillons avec des meuniers locaux et fermentons nos pâtes toute la nuit.</p>
+          <div className="values-grid">
+            <div className="value-item"><span className="value-icon">🌾</span><div className="value-title">Farines locales</div><p className="value-desc">Partenariat avec des meuniers à moins de 150 km</p></div>
+            <div className="value-item"><span className="value-icon">🕐</span><div className="value-title">Fermentation lente</div><p className="value-desc">18 à 24 heures pour un goût et une digestibilité optimaux</p></div>
+            <div className="value-item"><span className="value-icon">🔥</span><div className="value-title">Four à sole</div><p className="value-desc">Cuisson traditionnelle pour une croûte inoubliable</p></div>
+            <div className="value-item"><span className="value-icon">💚</span><div className="value-title">Zéro gaspillage</div><p className="value-desc">Les invendus sont redistribués chaque soir</p></div>
+          </div>
+        </div>
+      </section>
+
+      {/* MENU */}
+      <section id="menu" className="menu">
+        <div className="menu-header">
+          <div>
+            <span className="section-tag">Notre sélection</span>
+            <h2 className="section-title">La <em>carte</em> du jour</h2>
+          </div>
+          <div className="menu-filters">
+            {cats.map(c => (
+              <button key={c} className={`filter-btn${activeFilter === c ? " active" : ""}`} onClick={() => setActiveFilter(c)}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <div className="menu-grid">
+          {filtered.map(item => (
+            <div className="menu-card" key={item.id}>
+              <div className="menu-card-img">{item.emoji}</div>
+              <div className="menu-card-body">
+                <span className="menu-card-tag">{item.tag}</span>
+                <div className="menu-card-name">{item.name}</div>
+                <p className="menu-card-desc">{item.desc}</p>
+                <div className="menu-card-footer">
+                  <span className="menu-price">{item.price}</span>
+                  <button className="menu-order-btn" onClick={() => scrollTo("reservation")}>Commander</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* RESERVATION */}
+      <section id="reservation" className="reservation">
+        <div className="reservation-inner">
+          <div>
+            <span className="section-tag">Commande & Retrait</span>
+            <h2 className="section-title">Réservez votre<br /><em>commande</em></h2>
+            <p className="section-sub">Choisissez votre créneau de retrait, indiquez vos produits et récupérez votre commande fraîchement préparée.</p>
+            <div className="res-info-cards">
+              <div className="res-info-card"><span className="res-icon">📍</span><div><div className="res-info-label">Adresse</div><div className="res-info-val">12 rue du Four Banal, 75011 Paris</div></div></div>
+              <div className="res-info-card"><span className="res-icon">🕐</span><div><div className="res-info-label">Horaires</div><div className="res-info-val">Lun–Sam : 6h30 – 19h30 · Dim : 6h30 – 13h00</div></div></div>
+              <div className="res-info-card"><span className="res-icon">📞</span><div><div className="res-info-label">Téléphone</div><div className="res-info-val">01 43 56 XX XX</div></div></div>
+            </div>
+          </div>
+
+          <div className="booking-form">
+            {submitted ? (
+              <div className="success-msg">
+                <span className="check">✅</span>
+                <p><strong>Commande confirmée !</strong><br /><br />Merci <strong>{formData.nom}</strong>, votre commande est réservée pour le <strong>{formData.date}</strong> à <strong>{selectedSlot}</strong>.<br /><br />Un e-mail de confirmation a été envoyé à <strong>{formData.email}</strong>.</p>
+              </div>
+            ) : (
+              <>
+                <div className="form-title">Réserver un créneau</div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Prénom & Nom</label>
+                    <input className="form-input" placeholder="Marie Dupont" value={formData.nom} onChange={e => setFormData({...formData, nom: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Téléphone</label>
+                    <input className="form-input" placeholder="06 XX XX XX XX" value={formData.tel} onChange={e => setFormData({...formData, tel: e.target.value})} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input className="form-input" type="email" placeholder="marie@email.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Date de retrait</label>
+                    <input className="form-input" type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Produit(s) souhaités</label>
+                    <input className="form-input" placeholder="Ex: 2 baguettes, 1 tarte..." value={formData.service} onChange={e => setFormData({...formData, service: e.target.value})} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Créneau du matin</label>
+                  <div className="slots-grid">
+                    {SLOTS_MATIN.map(s => (
+                      <button key={s} className={`slot-btn${selectedSlot === s ? " selected" : ""}${TAKEN.includes(s) ? " taken" : ""}`}
+                        onClick={() => !TAKEN.includes(s) && setSelectedSlot(s)} disabled={TAKEN.includes(s)}>{s}</button>
+                    ))}
+                  </div>
+                  <label className="form-label">Créneau du midi</label>
+                  <div className="slots-grid">
+                    {SLOTS_MIDI.map(s => (
+                      <button key={s} className={`slot-btn${selectedSlot === s ? " selected" : ""}${TAKEN.includes(s) ? " taken" : ""}`}
+                        onClick={() => !TAKEN.includes(s) && setSelectedSlot(s)} disabled={TAKEN.includes(s)}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <button className="form-submit" onClick={handleSubmit}>Confirmer ma réservation →</button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="testimonials">
+        <div style={{textAlign: "center", marginBottom: 8}}>
+          <span className="section-tag">Ce qu'ils disent</span>
+          <h2 className="section-title">Nos <em>clients fidèles</em></h2>
+        </div>
+        <div className="testimonials-grid">
+          {TESTIMONIALS.map((t, i) => (
+            <div className="testimonial-card" key={i}>
+              <div className="stars">{"★".repeat(t.stars)}</div>
+              <p className="testimonial-text">{t.text}</p>
+              <div className="testimonial-author">
+                <div className="author-avatar">{t.init}</div>
+                <div><div className="author-name">{t.name}</div><div className="author-since">{t.since}</div></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer>
+        <div className="footer-top">
+          <div>
+            <div className="footer-brand-name">Fier & <span>Croustillant</span></div>
+            <p className="footer-brand-desc">Boulangerie artisanale au cœur de Paris. Chaque fournée est préparée avec soin, dans le respect des traditions et des saisons.</p>
+          </div>
+          <div>
+            <div className="footer-col-title">Navigation</div>
+            <ul className="footer-links">
+              <li><a onClick={() => scrollTo("accueil")}>Accueil</a></li>
+              <li><a onClick={() => scrollTo("apropos")}>Notre histoire</a></li>
+              <li><a onClick={() => scrollTo("menu")}>La carte</a></li>
+              <li><a onClick={() => scrollTo("reservation")}>Réservation</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="footer-col-title">Horaires</div>
+            <ul className="footer-links">
+              <li><a>Lun – Ven : 6h30 – 19h30</a></li>
+              <li><a>Samedi : 6h30 – 19h30</a></li>
+              <li><a>Dimanche : 6h30 – 13h00</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="footer-col-title">Contact</div>
+            <ul className="footer-links">
+              <li><a>12 rue du Four Banal</a></li>
+              <li><a>75011 Paris</a></li>
+              <li><a>01 43 56 XX XX</a></li>
+              <li><a>contact@fieretcroustillant.fr</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span className="footer-copy">© 2025 Fier & Croustillant — Tous droits réservés</span>
+          <span className="footer-copy">Fait avec <span className="footer-heart">♥</span> à Paris</span>
+        </div>
+      </footer>
+    </>
+  );
+}
