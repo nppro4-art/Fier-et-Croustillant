@@ -1,0 +1,13 @@
+{
+  "name": "office-chaos-simulator-multiplayer",
+  "version": "2.0.0",
+  "description": "First-Person 3D Office Chaos & Multiplayer Simulator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
